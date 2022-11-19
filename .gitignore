@@ -1,3 +1,8 @@
+*.addon
+eudev/all/*
+test.sh
+.nvram
+
 # Prerequisites
 *.d
 
@@ -24,8 +29,8 @@
 
 # Shared objects (inc. Windows DLLs)
 *.dll
-*.so
-*.so.*
+#*.so
+#*.so.*
 *.dylib
 
 # Executables
@@ -50,3 +55,5 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+powersched/src/powersched
+powersched/all/usr/sbin/powersched
