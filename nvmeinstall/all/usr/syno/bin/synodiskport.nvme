@@ -6,7 +6,7 @@ case "$1" in
             disk=$(basename "${nvme}")
             list="${list} ${disk}"
         done
-        if [ ${list} = " " ]; then
+        if [ "${list}" = " " ]; then
             exec -a "$0" /usr/syno/bin/scemd "$@"
         else
             echo "${list}"
