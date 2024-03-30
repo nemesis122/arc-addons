@@ -371,7 +371,7 @@ function nondtModel() {
   fi
 
   # Raidtool will read maxdisks, but when maxdisks is greater than 27, formatting error will occur 8%.
-  if ! _check_rootraidstatus && [ ${MAXDISKS} -gt 26 ]; then
+  if [ ${MAXDISKS} -gt 26 ]; then
     _set_conf_kv rd "maxdisks" "26"
     echo "set maxdisks=26 [${MAXDISKS}]"
   # fix isSingleBay issue: if maxdisks is 1, there is no create button in the storage panel
@@ -441,21 +441,25 @@ elif [ "${1}" = "late" ]; then
     # Check USB Mount Option
     if [ "${USBMOUNT}" = "force" ]; then
       echo "Adjust maxdisks and internalportcfg to force USB Mount Option"
+      MAXDISKS=26
       USBPORTCFG=0x00
       ESATAPORTCFG=0x00
       INTERNALPORTCFG=0x3ffffff
     else
       echo "Adjust maxdisks and internalportcfg automatically"
       # sysfs is unpopulated here, get the values from junior synoinfo.conf
+      MAXDISKS=$(_get_conf_kv maxdisks)
       USBPORTCFG=$(_get_conf_kv usbportcfg)
       ESATAPORTCFG=$(_get_conf_kv esataportcfg)
       INTERNALPORTCFG=$(_get_conf_kv internalportcfg)
     fi
     # log
+    echo "maxdisks=${MAXDISKS}"
     echo "usbportcfg=${USBPORTCFG}"
     echo "esataportcfg=${ESATAPORTCFG}"
     echo "internalportcfg=${INTERNALPORTCFG}"
     # set
+    _set_conf_kv hd "maxdisks" "${MAXDISKS}"
     _set_conf_kv hd "usbportcfg" "${USBPORTCFG}"
     _set_conf_kv hd "esataportcfg" "${ESATAPORTCFG}"
     _set_conf_kv hd "internalportcfg" "${INTERNALPORTCFG}"
@@ -463,13 +467,6 @@ elif [ "${1}" = "late" ]; then
     cp -vf /etc/extensionPorts /tmpRoot/etc/extensionPorts
     cp -vf /etc/extensionPorts /tmpRoot/etc.defaults/extensionPorts
   fi
-
-  MAXDISKS=$(_get_conf_kv maxdisks)
-  if [ "${USBMOUNT}" = "force" ]; then
-    MAXDISKS=26
-  fi
-  echo "maxdisks=${MAXDISKS}"
-  _set_conf_kv hd "maxdisks" "${MAXDISKS}"
 
   SUPPORTNVME=$(_get_conf_kv supportnvme)
   SUPPORT_M2_POOL=$(_get_conf_kv support_m2_pool)
