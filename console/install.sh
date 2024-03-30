@@ -7,7 +7,7 @@ if [ "${1}" = "modules" ]; then
   else
     for M in i915 efifb vesafb vga16fb; do
       [ -e /sys/class/graphics/fb0 ] && break
-      /usr/sbin/modprobe ${M}
+      [ -f /usr/modules/${M}.ko ] && /usr/sbin/modprobe ${M}
     done
   fi
   /usr/sbin/modprobe fbcon
@@ -24,7 +24,7 @@ elif [ "${1}" = "rcExit" ]; then
   echo -e "Junior mode\n" >/etc/issue
   echo "Starting getty..."
   /usr/sbin/getty -L 0 tty1 &
-  /usr/bin/loadkeys /usr/share/keymaps/i386/${LAYOUT:-qwerty}/${KEYMAP:-us}.map.gz
+  /usr/bin/loadkeys /usr/share/keymaps/i386/${LAYOUT:-qwertz}/${KEYMAP:-de}.map.gz
   # Workaround for DVA1622
   if [ "${MODEL}" = "DVA1622" ]; then
     echo >/dev/tty2
