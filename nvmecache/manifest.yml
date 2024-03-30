@@ -1,6 +1,6 @@
 version: 1
 name: nvmecache
-description: "Enable M2 as cache device (for non supported Models)"
+description: "Enable M.2 as Cache (for DS918+ RS1619xs+ DS1019+ DS1621xs+)"
 system: false
 beta: false
 all:

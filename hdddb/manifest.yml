@@ -1,6 +1,6 @@
 version: 1
 name: hdddb
-description: "Add your Disks to DSM compatibility DiskDB"
+description: "Add Disks to DSM compatibility DiskDB (Create Volume with non supported Disks)"
 beta: false
 all:
   install-script: "install.sh"

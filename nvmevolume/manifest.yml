@@ -1,6 +1,6 @@
 version: 1
 name: nvmevolume
-description: "Enable M2 as volume device (for non supported Models)"
+description: "Enable M.2 as Volume (for non supported Models)"
 system: false
 beta: false
 all:
