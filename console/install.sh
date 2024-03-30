@@ -7,7 +7,7 @@ if [ "${1}" = "modules" ]; then
   else
     for M in i915 efifb vesafb vga16fb; do
       [ -e /sys/class/graphics/fb0 ] && break
-      [ -f /usr/lib/modules/${M}.ko ] && /usr/sbin/modprobe ${M}
+      [ -f /usr/lib/modules/${M}.ko ] && /usr/sbin/modprobe ${M} || echo "Module ${M} not found"
     done
   fi
   /usr/sbin/modprobe fbcon
