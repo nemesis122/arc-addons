@@ -99,9 +99,9 @@ elif [ "${1}" = "late" ]; then
 
   echo "eudev: copy Rules"
   cp -rf /usr/lib/udev/rules.d/* /tmpRoot/usr/lib/udev/rules.d
-  echo "eudev: copy HWDB"
-  mkdir -p /tmpRoot/etc/udev/hwdb.d
-  cp -rf /etc/udev/hwdb.d/* /tmpRoot/etc/udev/hwdb.d
+  #echo "eudev: copy HWDB"
+  #mkdir -p /tmpRoot/etc/udev/hwdb.d
+  #cp -rf /etc/udev/hwdb.d/* /tmpRoot/etc/udev/hwdb.d
   
   DEST="/tmpRoot/lib/systemd/system/udevrules.service"
   echo "[Unit]"                                                                  >${DEST}
