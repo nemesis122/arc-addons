@@ -71,8 +71,11 @@ else
   echo "Starting ttyd ..."
   MSG=""
   MSG="\${MSG}Arc Recovery Mode\n"
-  MSG="\${MSG}To 'Force re-install DSM': please visit http://<ip>:5000/web_install.html\n"
-  MSG="\${MSG}To 'Modify system files' : please mount /dev/md0\n"
+  MSG="\${MSG}To 'Force re-install DSM': http://<ip>:5000/web_install.html\n"
+  MSG="\${MSG}To 'Reboot to Config Mode': http://<ip>:5000/webman/reboot_to_loader.cgi\n"
+  MSG="\${MSG}To 'Show Boot Log': http://<ip>:5000/webman/get_logs.cgi\n"
+  MSG="\${MSG}To 'Reboot Loader' : exec reboot\n"
+  MSG="\${MSG}To 'Modify system files' : mount /dev/md0\n"
   /usr/sbin/ttyd /usr/bin/ash -c "echo -e \"\${MSG}\"; ash" -l >/dev/null 2>&1 &
 fi
 if /usr/bin/lsof -Pi :7304 -sTCP:LISTEN -t >/dev/null; then
