@@ -1,8 +1,8 @@
 version: 1
-name: hostspatch
-description: "Prevent DSM from calling Home"
+name: dsmconfigbackup
+description: "Automatically backup Systemconfig Settings to the Bootloader Disk(/mnt/p1/dsmbackup) at Shutdown."
 system: false
-beta: true
+beta: false
 all:
   install-script: "install.sh"
   copy: "all"
