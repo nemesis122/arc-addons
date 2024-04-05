@@ -282,6 +282,11 @@ function dtModel() {
       MAXDISKS=$(($(_get_conf_kv maxdisks)))
       echo "get maxdisks=${MAXDISKS}"
     fi
+    # Raidtool will read maxdisks, but when maxdisks is greater than 27, formatting error will occur 8%.
+    if ! _check_rootraidstatus && [ ${MAXDISKS} -gt 26 ]; then
+      MAXDISKS=26
+      echo "set maxdisks=26 [${MAXDISKS}]"
+    fi
     # Check for USB Mount Option true
     if [ "${2}" = "true" ]; then
       MAXDISKS=26
