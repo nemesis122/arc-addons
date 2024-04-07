@@ -174,6 +174,7 @@ function getUsbPorts() {
 #
 function dtModel() {
   DEST="/addons/model.dts"
+  rm -f ${DEST}
   UNIQUE=$(_get_conf_kv unique)
   if [ ! -f "${DEST}" ]; then # Users can put their own dts.
     echo "/dts-v1/;" >${DEST}
@@ -337,6 +338,7 @@ function dtModel() {
     _set_conf_kv rd "maxdisks" "${MAXDISKS}"
     echo "maxdisks=${MAXDISKS}"
   fi
+  rm -f /etc/model.dtb
   dtc -I dts -O dtb ${DEST} >/etc/model.dtb
   cp -vf /etc/model.dtb /run/model.dtb
   /usr/syno/bin/syno_slot_mapping
