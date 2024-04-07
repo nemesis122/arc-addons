@@ -329,11 +329,10 @@ function dtModel() {
     if _check_post_k "rd" "maxdisks"; then
       MAXDISKS=$(($(_get_conf_kv maxdisks)))
       echo "get maxdisks=${MAXDISKS}"
-    else
-      if ! _check_rootraidstatus && [ ${MAXDISKS} -gt 26 ]; then
-        MAXDISKS=26
-        echo "set maxdisks=26 [${MAXDISKS}]"
-      fi
+    fi
+    if ! _check_rootraidstatus && [ ${MAXDISKS} -gt 26 ]; then
+      MAXDISKS=26
+      echo "set maxdisks=26 [${MAXDISKS}]"
     fi
     _set_conf_kv rd "maxdisks" "${MAXDISKS}"
     echo "maxdisks=${MAXDISKS}"
@@ -397,11 +396,10 @@ function nondtModel() {
     if _check_post_k "rd" "maxdisks"; then
       MAXDISKS=$(($(_get_conf_kv maxdisks)))
       echo "get maxdisks=${MAXDISKS}"
-    else
-      if ! _check_rootraidstatus && [ ${MAXDISKS} -gt 26 ]; then
-        MAXDISKS=26
-        echo "set maxdisks=26 [${MAXDISKS}]"
-      fi
+    fi
+    if ! _check_rootraidstatus && [ ${MAXDISKS} -gt 26 ]; then
+      MAXDISKS=26
+      echo "set maxdisks=26 [${MAXDISKS}]"
     fi
     if _check_post_k "rd" "usbportcfg"; then
       USBPORTCFG=$(($(_get_conf_kv usbportcfg)))
