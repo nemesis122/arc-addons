@@ -196,7 +196,7 @@ function dtModel() {
       _set_conf_kv rd "support_m2_pool" "yes"
     fi
     # SATA ports
-    if [ "${1}" = "true" ]; then
+    if [ "${HDDSORT}" = "true" ]; then
       I=1
       for P in $(lspci -d ::106 2>/dev/null | cut -d' ' -f1); do
         HOSTNUM=$(ls -l /sys/class/scsi_host 2>/dev/null | grep ${P} | wc -l)
@@ -228,6 +228,7 @@ function dtModel() {
           I=$((${I} + 1))
         done
       done
+      # 100 = SCSI, 104 = RAID, 107 = HBA
       for P in $(lspci -d ::107 2>/dev/null | cut -d' ' -f1) $(lspci -d ::104 2>/dev/null | cut -d' ' -f1) $(lspci -d ::100 2>/dev/null | cut -d' ' -f1); do
         J=1
         while true; do
@@ -277,22 +278,13 @@ function dtModel() {
         J=$((${J} + 1))
       done
     fi
-    MAXDISKS=$((${I} - 1))
-    if _check_post_k "rd" "maxdisks"; then
-      MAXDISKS=$(($(_get_conf_kv maxdisks)))
-      echo "get maxdisks=${MAXDISKS}"
+    NUMPORTS=$((${I} - 1))
+    if ! _check_rootraidstatus && [ ${MAXDISKS} -le 2 ]; then
+      # fix isSingleBay issue: if maxdisks is 1, there is no create button in the storage panel
+      NUMPORTS=4
     fi
-    # Raidtool will read maxdisks, but when maxdisks is greater than 27, formatting error will occur 8%.
-    if ! _check_rootraidstatus && [ ${MAXDISKS} -gt 26 ]; then
-      MAXDISKS=26
-      echo "set maxdisks=26 [${MAXDISKS}]"
-    fi
-    # Check for USB Mount Option true
-    if [ "${2}" = "true" ]; then
-      MAXDISKS=26
-    fi
-    _set_conf_kv rd "maxdisks" "${MAXDISKS}"
-    echo "maxdisks=${MAXDISKS}"
+    _set_conf_kv rd "maxdisks" "${NUMPORTS}"
+    echo "maxdisks=${NUMPORTS}"
 
     # NVME ports
     COUNT=1
@@ -337,12 +329,12 @@ function nondtModel() {
   ESATAPORTCFG=0
   INTERNALPORTCFG=0
   HBA_NUMBER=$(($(lspci -d ::107 2>/dev/null | wc -l) + $(lspci -d ::104 2>/dev/null | wc -l) + $(lspci -d ::100 2>/dev/null | wc -l)))
-
+  
   for I in $(ls -d /sys/block/sd* 2>/dev/null); do
     IDX=$(_atoi ${I/\/sys\/block\/sd/})
     ISUSB="$(cat ${I}/uevent 2>/dev/null | grep PHYSDEVPATH | grep usb)"
     [ -n "${ISUSB}" ] && USBPORTCFG=$((${USBPORTCFG} | $((1 << ${IDX}))))
-    if [ ! -n "${ISUSB}" ] || [ "${2}" = "true"]; then
+    if [ -z "${ISUSB}" ] || [ "${USBMOUNT}" = "true"]; then
       [ $((${IDX} + 1)) -ge ${MAXDISKS} ] && MAXDISKS=$((${IDX} + 1))
     fi
   done
@@ -351,17 +343,6 @@ function nondtModel() {
     MAXDISKS=$(($(_get_conf_kv maxdisks)))
     echo "get maxdisks=${MAXDISKS}"
   fi
-
-  # Raidtool will read maxdisks, but when maxdisks is greater than 27, formatting error will occur 8%.
-  if ! _check_rootraidstatus && [ ${MAXDISKS} -gt 26 ]; then
-    MAXDISKS=26
-    echo "set maxdisks=26 [${MAXDISKS}]"
-  fi
-  # Check for USB Mount Option true
-  if [ "${2}" = "true" ]; then
-    MAXDISKS=26
-  fi
-
   if _check_post_k "rd" "usbportcfg"; then
     USBPORTCFG=$(($(_get_conf_kv usbportcfg)))
     echo "get usbportcfg=${USBPORTCFG}"
@@ -389,10 +370,20 @@ function nondtModel() {
     echo "set internalportcfg=${INTERNALPORTCFG}"
   fi
 
-  _set_conf_kv rd "maxdisks" "${MAXDISKS}"
-  echo "set maxdisks=${MAXDISKS}"
+  # Raidtool will read maxdisks, but when maxdisks is greater than 27, formatting error will occur 8%.
+  if [ ${MAXDISKS} -gt 26 ]; then
+    _set_conf_kv rd "maxdisks" "26"
+    echo "set maxdisks=26 [${MAXDISKS}]"
+  # fix isSingleBay issue: if maxdisks is 1, there is no create button in the storage panel
+  elif ! _check_rootraidstatus && [ ${MAXDISKS} -le 2 ]; then
+    _set_conf_kv rd "maxdisks" "4"
+    echo "set maxdisks=4 [${MAXDISKS}]"
+  else
+    _set_conf_kv rd "maxdisks" "${MAXDISKS}"
+    echo "set maxdisks=${MAXDISKS}"
+  fi
 
-  if [ "${HDDSORT}" = "true" ]; then
+  if [ "${1}" = "true" ]; then
     echo "TODO: no-DT's sort!!!"
   fi
 
@@ -424,23 +415,23 @@ function nondtModel() {
 #
 if [ "${1}" = "patches" ]; then
   echo "Installing addon disks - ${1}"
-
-  BOOTDISK_PART3_PATH=$(blkid -L ARC3 2>/dev/null)
-  [ -n "${BOOTDISK_PART3_PATH}" ] && BOOTDISK_PART3_MAJORMINOR="$((0x$(stat -c '%t' "${BOOTDISK_PART3_PATH}"))):$((0x$(stat -c '%T' "${BOOTDISK_PART3_PATH}")))" || BOOTDISK_PART3_MAJORMINOR=""
-  [ -n "${BOOTDISK_PART3_MAJORMINOR}" ] && BOOTDISK_PART3="$(cat /sys/dev/block/${BOOTDISK_PART3_MAJORMINOR}/uevent 2>/dev/null | grep 'DEVNAME' | cut -d'=' -f2)" || BOOTDISK_PART3=""
-
-  [ -n "${BOOTDISK_PART3}" ] && BOOTDISK=$(ls -d /sys/block/*/${BOOTDISK_PART3} 2>/dev/null | cut -d'/' -f4) || BOOTDISK=""
+  # 2 = hddsort / 3 = usbmount
+  HDDSORT="${2:-false}"
+  USBMOUNT="${3:-false}"
+  BOOTDISK=""
+  BOOTDISK_PART3=$(blkid -L ARC3 2>/dev/null | sed 's/\/dev\///')
+  [ -n "${BOOTDISK_PART3}" ] && BOOTDISK=$(ls -d /sys/block/*/${BOOTDISK_PART3} 2>/dev/null | cut -d'/' -f4)
   [ -n "${BOOTDISK}" ] && BOOTDISK_PHYSDEVPATH="$(cat /sys/block/${BOOTDISK}/uevent 2>/dev/null | grep 'PHYSDEVPATH' | cut -d'=' -f2)" || BOOTDISK_PHYSDEVPATH=""
-
   echo "BOOTDISK=${BOOTDISK}"
   echo "BOOTDISK_PHYSDEVPATH=${BOOTDISK_PHYSDEVPATH}"
-  
   checkSynoboot
-
-  [ "$(_get_conf_kv supportportmappingv2)" = "yes" ] && dtModel "${2}" "${3}" || nondtModel "${2}" "${3}"
+  [ "$(_get_conf_kv supportportmappingv2)" = "yes" ] && dtModel || nondtModel
 
 elif [ "${1}" = "late" ]; then
   echo "Installing addon disks - ${1}"
+  # 2 = hddsort / 3 = usbmount
+  HDDSORT="${2:-false}"
+  USBMOUNT="${3:-false}"
   if [ "$(_get_conf_kv supportportmappingv2)" = "yes" ]; then
     echo "Copying /etc.defaults/model.dtb"
     # copy file
@@ -448,8 +439,8 @@ elif [ "${1}" = "late" ]; then
     cp -vf /etc/model.dtb /tmpRoot/etc.defaults/model.dtb
   else
     # Check USB Mount Option
-    if [ "${3}" = "force" ]; then
-      echo "Adjust maxdisks and internalportcfg to USB Mount Option force"
+    if [ "${USBMOUNT}" = "force" ]; then
+      echo "Adjust maxdisks and internalportcfg to force USB Mount Option"
       MAXDISKS=26
       USBPORTCFG=0x00
       ESATAPORTCFG=0x00
@@ -462,16 +453,13 @@ elif [ "${1}" = "late" ]; then
       ESATAPORTCFG=$(_get_conf_kv esataportcfg)
       INTERNALPORTCFG=$(_get_conf_kv internalportcfg)
     fi
-    echo "Adjust maxdisks and internalportcfg automatically"
-    # sysfs is unpopulated here, get the values from junior synoinfo.conf
-    USBPORTCFG=$(_get_conf_kv usbportcfg)
-    ESATAPORTCFG=$(_get_conf_kv esataportcfg)
-    INTERNALPORTCFG=$(_get_conf_kv internalportcfg)
     # log
+    echo "maxdisks=${MAXDISKS}"
     echo "usbportcfg=${USBPORTCFG}"
     echo "esataportcfg=${ESATAPORTCFG}"
     echo "internalportcfg=${INTERNALPORTCFG}"
     # set
+    _set_conf_kv hd "maxdisks" "${MAXDISKS}"
     _set_conf_kv hd "usbportcfg" "${USBPORTCFG}"
     _set_conf_kv hd "esataportcfg" "${ESATAPORTCFG}"
     _set_conf_kv hd "internalportcfg" "${INTERNALPORTCFG}"
@@ -479,10 +467,6 @@ elif [ "${1}" = "late" ]; then
     cp -vf /etc/extensionPorts /tmpRoot/etc/extensionPorts
     cp -vf /etc/extensionPorts /tmpRoot/etc.defaults/extensionPorts
   fi
-
-  MAXDISKS=$(_get_conf_kv maxdisks)
-  echo "maxdisks=${MAXDISKS}"
-  _set_conf_kv hd "maxdisks" "${MAXDISKS}"
 
   SUPPORTNVME=$(_get_conf_kv supportnvme)
   SUPPORT_M2_POOL=$(_get_conf_kv support_m2_pool)
