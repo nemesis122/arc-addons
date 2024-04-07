@@ -326,10 +326,6 @@ function dtModel() {
     if [ ${USBMOUNT} = "true" ] && [ ${USBCOUNT} -gt 0 ]; then
       MAXDISKS=$((${MAXDISKS} + ${USBCOUNT}))
     fi
-    if _check_post_k "rd" "maxdisks"; then
-      MAXDISKS=$(($(_get_conf_kv maxdisks)))
-      echo "get maxdisks=${MAXDISKS}"
-    fi
     if ! _check_rootraidstatus && [ ${MAXDISKS} -gt 26 ]; then
       MAXDISKS=26
       echo "set maxdisks=26 [${MAXDISKS}]"
@@ -393,40 +389,21 @@ function nondtModel() {
     if [ ${NVMECOUNT} -gt 0 ]; then
       MAXDISKS=$((${MAXDISKS} + ${NVMECOUNT}))
     fi
-    if _check_post_k "rd" "maxdisks"; then
-      MAXDISKS=$(($(_get_conf_kv maxdisks)))
-      echo "get maxdisks=${MAXDISKS}"
-    fi
     if ! _check_rootraidstatus && [ ${MAXDISKS} -gt 26 ]; then
       MAXDISKS=26
       echo "set maxdisks=26 [${MAXDISKS}]"
     fi
-    if _check_post_k "rd" "usbportcfg"; then
-      USBPORTCFG=$(($(_get_conf_kv usbportcfg)))
-      echo "get usbportcfg=${USBPORTCFG}"
+    _set_conf_kv rd "usbportcfg" "$(printf '0x%.2x' ${USBPORTCFG})"
+    echo "set usbportcfg=${USBPORTCFG}"
+    _set_conf_kv rd "esataportcfg" "$(printf "0x%.2x" ${ESATAPORTCFG})"
+    echo "set esataportcfg=${ESATAPORTCFG}"
+    if [ "${USBMOUNT}" = "true" ]; then
+      INTERNALPORTCFG=$(($((2 ** ${MAXDISKS} - 1)) ^ ${USBPORTCFG} ^ ${ESATAPORTCFG}))
     else
-      _set_conf_kv rd "usbportcfg" "$(printf '0x%.2x' ${USBPORTCFG})"
-      echo "set usbportcfg=${USBPORTCFG}"
+      INTERNALPORTCFG=$((2 ** ${MAXDISKS} - 1))
     fi
-    if _check_post_k "rd" "esataportcfg"; then
-      ESATAPORTCFG=$(($(_get_conf_kv esataportcfg)))
-      echo "get esataportcfg=${ESATAPORTCFG}"
-    else
-      _set_conf_kv rd "esataportcfg" "$(printf "0x%.2x" ${ESATAPORTCFG})"
-      echo "set esataportcfg=${ESATAPORTCFG}"
-    fi
-    if _check_post_k "rd" "internalportcfg"; then
-      INTERNALPORTCFG=$(($(_get_conf_kv internalportcfg)))
-      echo "get internalportcfg=${INTERNALPORTCFG}"
-    else
-      if [ "${USBMOUNT}" = "true" ]; then
-        INTERNALPORTCFG=$(($((2 ** ${MAXDISKS} - 1)) ^ ${USBPORTCFG} ^ ${ESATAPORTCFG}))
-      else
-        INTERNALPORTCFG=$((2 ** ${MAXDISKS} - 1))
-      fi
-      _set_conf_kv rd "internalportcfg" "$(printf "0x%.2x" ${INTERNALPORTCFG})"
-      echo "set internalportcfg=${INTERNALPORTCFG}"
-    fi
+    _set_conf_kv rd "internalportcfg" "$(printf "0x%.2x" ${INTERNALPORTCFG})"
+    echo "set internalportcfg=${INTERNALPORTCFG}"
     _set_conf_kv rd "maxdisks" "${MAXDISKS}"
     echo "maxdisks=${MAXDISKS}"
   done
